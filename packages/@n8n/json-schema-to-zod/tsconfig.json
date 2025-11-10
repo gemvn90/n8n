@@ -1,6 +1,7 @@
 {
 	"extends": ["@n8n/typescript-config/tsconfig.common.json"],
 	"compilerOptions": {
+		"types": ["node", "jest"],
 		"rootDir": ".",
 		"baseUrl": "src",
 		"strict": true,

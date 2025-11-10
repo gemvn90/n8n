@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"types": ["node", "jest"],
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"outDir": "dist/types",

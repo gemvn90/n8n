@@ -40,7 +40,8 @@ export async function rabbitmqConnect(
 		}
 	}
 
-	return await amqplib.connect(credentialData, optsData);
+	// amqplib types have changed in some versions; coerce at runtime to the expected Connection type
+	return (await amqplib.connect(credentialData, optsData)) as unknown as amqplib.Connection;
 }
 
 export async function rabbitmqCreateChannel(
@@ -49,13 +50,14 @@ export async function rabbitmqCreateChannel(
 	const credentials = await this.getCredentials<RabbitMQCredentials>('rabbitmq');
 
 	return await new Promise(async (resolve, reject) => {
-		try {
-			const connection = await rabbitmqConnect(credentials);
-			// TODO: why is this error handler being added here?
-			connection.on('error', reject);
+			try {
+				// Coerce connection to `any` to work around differing amqplib type definitions across versions
+				const connection = (await rabbitmqConnect(credentials)) as unknown as any;
+				// TODO: why is this error handler being added here?
+				connection.on('error', reject);
 
-			const channel = await connection.createChannel();
-			resolve(channel);
+				const channel = await connection.createChannel();
+				resolve(channel as amqplib.Channel);
 		} catch (error) {
 			reject(error);
 		}
@@ -158,8 +160,9 @@ export class MessageTracker {
 			unansweredMessages = this.unansweredMessages();
 		}
 
-		await channel.close();
-		await channel.connection.close();
+	await channel.close();
+	// connection typing can be inconsistent across amqplib versions — cast to any for the close call
+	await (channel as unknown as any).connection.close();
 	}
 }
 

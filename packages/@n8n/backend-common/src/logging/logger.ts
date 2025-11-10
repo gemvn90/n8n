@@ -156,7 +156,7 @@ export class Logger implements LoggerType {
 		} else if (this.level === 'debug' && inProduction) {
 			return this.debugProdConsoleFormat();
 		} else {
-			return winston.format.printf(({ message }: { message: string }) => message);
+			return winston.format.printf((info: TransformableInfo) => String(info.message));
 		}
 	}
 
@@ -195,11 +195,13 @@ export class Logger implements LoggerType {
 			winston.format.timestamp({ format: () => this.devTsFormat() }),
 			this.color(),
 			this.scopeFilter(),
-			winston.format.printf(({ level: rawLevel, message, timestamp, metadata: rawMetadata }) => {
+			winston.format.printf((info: TransformableInfo) => {
 				const separator = ' '.repeat(3);
 				const logLevelColumnWidth = this.noColor ? 5 : 15; // when colorizing, account for ANSI color codes
-				const level = rawLevel.toLowerCase().padEnd(logLevelColumnWidth, ' ');
-				const metadata = this.toPrintable(rawMetadata);
+				const level = String(info.level).toLowerCase().padEnd(logLevelColumnWidth, ' ');
+				const timestamp = (info as unknown as { timestamp?: string }).timestamp;
+				const message = String(info.message);
+				const metadata = this.toPrintable((info as unknown as { metadata?: unknown }).metadata);
 				return [timestamp, level, message + ' ' + pc.dim(metadata)].join(separator);
 			}),
 		);
@@ -211,8 +213,11 @@ export class Logger implements LoggerType {
 			winston.format.timestamp(),
 			this.color(true), // Default to no colors in production
 			this.scopeFilter(),
-			winston.format.printf(({ level, message, timestamp, metadata: rawMetadata }) => {
-				const metadata = this.toPrintable(rawMetadata);
+			winston.format.printf((info: TransformableInfo) => {
+				const timestamp = (info as unknown as { timestamp?: string }).timestamp;
+				const level = String(info.level);
+				const message = String(info.message);
+				const metadata = this.toPrintable((info as unknown as { metadata?: unknown }).metadata);
 				return `${timestamp} | ${level.padEnd(5)} | ${message}${metadata ? ' ' + metadata : ''}`;
 			}),
 		);
